@@ -119,6 +119,80 @@ SEED_WORDS = [
     {"單字": "感じる", "讀音": "かんじる", "中文": "感覺；感受", "詞性": "動詞（一段）", "分類": ["基礎動詞"]},
 ]
 
+SEED_WORDS_EN = [
+    # ── Nouns (18) ──────────────────────────────────────────────
+    {"單字": "apple", "讀音": "ˈæpl", "中文": "蘋果", "詞性": "Noun", "分類": ["Food"]},
+    {"單字": "book", "讀音": "bʊk", "中文": "書", "詞性": "Noun", "分類": ["Education"]},
+    {"單字": "computer", "讀音": "kəmˈpjuːtər", "中文": "電腦", "詞性": "Noun", "分類": ["Technology"]},
+    {"單字": "dog", "讀音": "dɔːɡ", "中文": "狗", "詞性": "Noun", "分類": ["Animals"]},
+    {"單字": "elephant", "讀音": "ˈelɪfənt", "中文": "大象", "詞性": "Noun", "分類": ["Animals"]},
+    {"單字": "friend", "讀音": "frend", "中文": "朋友", "詞性": "Noun", "分類": ["People"]},
+    {"單字": "game", "讀音": "ɡeɪm", "中文": "遊戲", "詞性": "Noun", "分類": ["Entertainment"]},
+    {"單字": "house", "讀音": "haʊs", "中文": "房子", "詞性": "Noun", "分類": ["Places"]},
+    {"單字": "island", "讀音": "ˈaɪlənd", "中文": "島嶼", "詞性": "Noun", "分類": ["Places"]},
+    {"單字": "job", "讀音": "dʒɑːb", "中文": "工作", "詞性": "Noun", "分類": ["Work"]},
+    {"單字": "kitchen", "讀音": "ˈkɪtʃɪn", "中文": "廚房", "詞性": "Noun", "分類": ["Places"]},
+    {"單字": "library", "讀音": "ˈlaɪbreri", "中文": "圖書館", "詞性": "Noun", "分類": ["Education"]},
+    {"單字": "mountain", "讀音": "ˈmaʊntən", "中文": "山", "詞性": "Noun", "分類": ["Nature"]},
+    {"單字": "night", "讀音": "naɪt", "中文": "夜晚", "詞性": "Noun", "分類": ["Time"]},
+    {"單字": "ocean", "讀音": "ˈoʊʃən", "中文": "海洋", "詞性": "Noun", "分類": ["Nature"]},
+    {"單字": "phone", "讀音": "foʊn", "中文": "電話", "詞性": "Noun", "分類": ["Technology"]},
+    {"單字": "question", "讀音": "ˈkwɛstʃən", "中文": "問題", "詞性": "Noun", "分類": ["Education"]},
+    {"單字": "river", "讀音": "ˈrɪvər", "中文": "河流", "詞性": "Noun", "分類": ["Nature"]},
+
+    # ── Verbs (12) ──────────────────────────────────────────────
+    {"單字": "run", "讀音": "rʌn", "中文": "跑步", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "eat", "讀音": "iːt", "中文": "吃", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "sleep", "讀音": "sliːp", "中文": "睡覺", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "think", "讀音": "θɪŋk", "中文": "思考", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "write", "讀音": "raɪt", "中文": "寫", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "understand", "讀音": "ˌʌndərˈstænd", "中文": "理解", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "discover", "讀音": "dɪˈskʌvər", "中文": "發現", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "explain", "讀音": "ɪkˈspleɪn", "中文": "解釋", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "forgive", "讀音": "fərˈɡɪv", "中文": "原諒", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "listen", "讀音": "ˈlɪsən", "中文": "聆聽", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "remember", "讀音": "rɪˈmɛmbər", "中文": "記得", "詞性": "Verb", "分類": ["Action"]},
+    {"單字": "suggest", "讀音": "səˈdʒɛst", "中文": "建議", "詞性": "Verb", "分類": ["Action"]},
+
+    # ── Adjectives (12) ──────────────────────────────────────────
+    {"單字": "beautiful", "讀音": "ˈbjuːtɪfl", "中文": "美麗的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "happy", "讀音": "ˈhæpi", "中文": "快樂的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "important", "讀音": "ɪmˈpɔːrtnt", "中文": "重要的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "difficult", "讀音": "ˈdɪfɪkəlt", "中文": "困難的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "quick", "讀音": "kwɪk", "中文": "快速的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "ancient", "讀音": "ˈeɪnʃənt", "中文": "古老的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "brilliant", "讀音": "ˈbrɪljənt", "中文": "出色的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "curious", "讀音": "ˈkjʊriəs", "中文": "好奇的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "generous", "讀音": "ˈdʒɛnərəs", "中文": "慷慨的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "honest", "讀音": "ˈɒnɪst", "中文": "誠實的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "modern", "讀音": "ˈmɒdərn", "中文": "現代的", "詞性": "Adjective", "分類": ["Description"]},
+    {"單字": "silent", "讀音": "ˈsaɪlənt", "中文": "安靜的", "詞性": "Adjective", "分類": ["Description"]},
+
+    # ── Adverbs (8) ──────────────────────────────────────────────
+    {"單字": "quickly", "讀音": "ˈkwɪkli", "中文": "快速地", "詞性": "Adverb", "分類": ["Description"]},
+    {"單字": "very", "讀音": "ˈveri", "中文": "非常", "詞性": "Adverb", "分類": ["Description"]},
+    {"單字": "always", "讀音": "ˈɔːlweɪz", "中文": "總是", "詞性": "Adverb", "分類": ["Time"]},
+    {"單字": "carefully", "讀音": "ˈkɛrfəli", "中文": "小心地", "詞性": "Adverb", "分類": ["Description"]},
+    {"單字": "finally", "讀音": "ˈfaɪnəli", "中文": "最終", "詞性": "Adverb", "分類": ["Time"]},
+    {"單字": "nearly", "讀音": "ˈnɪrli", "中文": "幾乎", "詞性": "Adverb", "分類": ["Description"]},
+    {"單字": "often", "讀音": "ˈɔːfən", "中文": "經常", "詞性": "Adverb", "分類": ["Time"]},
+    {"單字": "slowly", "讀音": "ˈsloʊli", "中文": "緩慢地", "詞性": "Adverb", "分類": ["Description"]},
+
+    # ── Pronouns (5) ──────────────────────────────────────────────
+    {"單字": "she", "讀音": "ʃiː", "中文": "她", "詞性": "Pronoun", "分類": ["Grammar"]},
+    {"單字": "they", "讀音": "ðeɪ", "中文": "他們", "詞性": "Pronoun", "分類": ["Grammar"]},
+    {"單字": "we", "讀音": "wiː", "中文": "我們", "詞性": "Pronoun", "分類": ["Grammar"]},
+    {"單字": "it", "讀音": "ɪt", "中文": "它", "詞性": "Pronoun", "分類": ["Grammar"]},
+    {"單字": "who", "讀音": "huː", "中文": "誰", "詞性": "Pronoun", "分類": ["Grammar"]},
+
+    # ── Prepositions (5) ──────────────────────────────────────────────
+    {"單字": "above", "讀音": "əˈbʌv", "中文": "在...上方", "詞性": "Preposition", "分類": ["Grammar"]},
+    {"單字": "between", "讀音": "bɪˈtwiːn", "中文": "在...之間", "詞性": "Preposition", "分類": ["Grammar"]},
+    {"單字": "during", "讀音": "ˈdjʊərɪŋ", "中文": "在...期間", "詞性": "Preposition", "分類": ["Grammar"]},
+    {"單字": "toward", "讀音": "ˈtɔːwərd", "中文": "朝向", "詞性": "Preposition", "分類": ["Grammar"]},
+    {"單字": "within", "讀音": "wɪˈðɪn", "中文": "在...之內", "詞性": "Preposition", "分類": ["Grammar"]},
+]
+
 def seed():
     # 讀取現有字典
     if os.path.exists(FILE_PATH):
@@ -139,7 +213,31 @@ def seed():
             continue
 
         entry = {
-            "language": "japanese",
+            "language": "ja",
+            "單字": word,
+            "讀音": w.get("讀音", ""),
+            "中文": w.get("中文", ""),
+            "英文": "",
+            "詞性": w.get("詞性", ""),
+            "分類": w.get("分類", []),
+            "例句": [],
+            "用法": "",
+            "補充": "",
+            "圖片": "",
+            "左頁分割": [0.18, 0.42, 0.40],
+            "加入時間": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        data.append(entry)
+        existing_words.add(word)
+        added += 1
+
+    for w in SEED_WORDS_EN:
+        word = w["單字"]
+        if word in existing_words:
+            continue
+
+        entry = {
+            "language": "en",
             "單字": word,
             "讀音": w.get("讀音", ""),
             "中文": w.get("中文", ""),

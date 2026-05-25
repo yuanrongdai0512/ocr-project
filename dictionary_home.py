@@ -463,6 +463,19 @@ class DictionaryHome:
         self.translation_result_text.delete("1.0", tk.END)
         self.translation_result_text.insert("1.0", result or "翻譯結果為空")
 
+    def _retranslate_from_source_text(self):
+        """讀取翻譯區原文欄位的當前內容，重新觸發非同步翻譯。"""
+        if not hasattr(self, "translation_source_text"):
+            return
+        source = self.translation_source_text.get("1.0", tk.END).strip()
+        if not source:
+            messagebox.showinfo("翻譯", "請先在原文區輸入文字", parent=self.window)
+            return
+        if hasattr(self, "translation_result_text"):
+            self.translation_result_text.delete("1.0", tk.END)
+            self.translation_result_text.insert("1.0", "翻譯中，請稍候…")
+        self.translate_area_text_async(source)
+
     def get_selected_text_from_widget(self, widget):
         try:
             return widget.get("sel.first", "sel.last").strip()
@@ -514,7 +527,6 @@ class DictionaryHome:
         return [
             ("日文字典", "ja", "OCR 日文、讀音、詞性、例句", "#9B6A46"),
             ("英文字典", "en", "單字查詢、片語與基本分類", "#4F6F7D"),
-            ("中文字典", "zh", "中文詞語收藏與整理", "#7B5B86"),
             ("新增字典", "new", "預留新的語言字典或分類", "#6B7A4D")
         ]
 
@@ -841,6 +853,13 @@ class DictionaryHome:
         hide_toolbar_btn = self.create_footer_button(left_actions, "隱藏工具列", self.hide_toolbar)
         hide_toolbar_btn.pack(side=tk.LEFT, padx=(12, 0))
 
+        retranslate_btn = self.create_footer_button(
+            left_actions,
+            "🔄 重新翻譯",
+            self._retranslate_from_source_text
+        )
+        retranslate_btn.pack(side=tk.LEFT, padx=(12, 0))
+
         close_btn = self.create_footer_button(bottom, "關閉", self.window.destroy)
         close_btn.pack(side=tk.RIGHT)
 
@@ -971,9 +990,58 @@ class DictionaryHome:
         left_page.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(16, 8), pady=16)
         left_page.pack_propagate(False)
 
-        right_page = tk.Frame(book_frame, bg="#FBF6EE", bd=0, width=430)
-        right_page.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=(8, 16), pady=16)
-        right_page.pack_propagate(False)
+        # ── 右欄「詳解」：改為可滾動的 Canvas 容器 ──────────────────
+        right_outer = tk.Frame(book_frame, bg="#D8C2A2", bd=0, width=430)
+        right_outer.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=(8, 16), pady=16)
+        right_outer.pack_propagate(False)
+
+        right_canvas = tk.Canvas(right_outer, bg="#FBF6EE", highlightthickness=0)
+        right_scroll = tk.Scrollbar(right_outer, orient=tk.VERTICAL, command=right_canvas.yview)
+        right_canvas.configure(yscrollcommand=right_scroll.set)
+        right_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        right_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        right_page = tk.Frame(right_canvas, bg="#FBF6EE", bd=0)
+        right_page_window = right_canvas.create_window((0, 0), window=right_page, anchor="nw")
+
+        def _on_right_page_configure(event):
+            right_canvas.configure(scrollregion=right_canvas.bbox("all"))
+        def _on_right_canvas_configure(event):
+            right_canvas.itemconfig(right_page_window, width=event.width)
+        right_page.bind("<Configure>", _on_right_page_configure)
+        right_canvas.bind("<Configure>", _on_right_canvas_configure)
+
+        def _on_right_mousewheel(event):
+            right_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        right_canvas.bind("<MouseWheel>", _on_right_mousewheel)
+        right_page.bind("<MouseWheel>", _on_right_mousewheel)
+
+        right_page_title = tk.Label(
+            right_page,
+            text="詳解",
+            font=("Microsoft JhengHei", 15, "bold"),
+            bg="#FBF6EE",
+            fg="#4A2F21",
+            pady=12
+        )
+        right_page_title.pack()
+
+        self.collection_translation_text = self.create_labeled_text(right_page, "中文", 4)
+        self.collection_english_text = self.create_labeled_text(right_page, "英文", 3)
+        self.collection_reading_entry = self.create_labeled_entry(right_page, "讀音")
+        self.collection_pos_entry = self.create_labeled_entry(right_page, "詞性")
+        self.collection_tag_entry = self.create_labeled_entry(right_page, "分類 tag（用逗號分隔）")
+        self.collection_example_text = self.create_labeled_text(right_page, "例句（每行一個）", 5)
+        self.collection_usage_text = self.create_labeled_text(right_page, "用法", 5)
+
+        # 讓子元件的滾輪事件也能冒泡到 Canvas
+        def _bind_mousewheel_recursive(widget):
+            widget.bind("<MouseWheel>", _on_right_mousewheel)
+            for child in widget.winfo_children():
+                _bind_mousewheel_recursive(child)
+
+        right_page.after(200, lambda: _bind_mousewheel_recursive(right_page))
+        self.bind_collection_autosave_events()
 
         left_page_title = tk.Label(
             left_page,
@@ -1088,24 +1156,8 @@ class DictionaryHome:
         )
         self.collection_image_preview_label.pack(fill=tk.BOTH, expand=True)
 
-        right_page_title = tk.Label(
-            right_page,
-            text="詳解",
-            font=("Microsoft JhengHei", 15, "bold"),
-            bg="#FBF6EE",
-            fg="#4A2F21",
-            pady=12
-        )
-        right_page_title.pack()
 
-        self.collection_translation_text = self.create_labeled_text(right_page, "中文", 4)
-        self.collection_english_text = self.create_labeled_text(right_page, "英文", 3)
-        self.collection_reading_entry = self.create_labeled_entry(right_page, "讀音")
-        self.collection_pos_entry = self.create_labeled_entry(right_page, "詞性")
-        self.collection_tag_entry = self.create_labeled_entry(right_page, "分類 tag（用逗號分隔）")
-        self.collection_example_text = self.create_labeled_text(right_page, "例句（每行一個）", 5)
-        self.collection_usage_text = self.create_labeled_text(right_page, "用法", 5)
-        self.bind_collection_autosave_events()
+
 
         bottom = tk.Frame(outer, bg="#F5EAD9")
         bottom.pack(fill=tk.X)
@@ -1675,12 +1727,25 @@ class DictionaryHome:
         )
         std_frame.pack(fill=tk.X, padx=14, pady=(0, 8))
 
-        for text, value in [
-            ("📝 看單字輸入讀音", "reading_input"),
-            ("📝 看中文選單字", "meaning_choice"),
-            ("🔀 內部混淆選擇題", "local_distractor"),
-            ("⏱️ 詞性限時分類", "pos_sorting"),
-        ]:
+        self.exam_mode_rbs = {}
+        
+        exam_lang = self.get_exam_language()
+        if exam_lang == "en":
+            std_modes = [
+                ("📝 拼寫練習", "reading_input"),
+                ("📝 看中文選單字", "meaning_choice"),
+                ("🔀 英文混淆選擇題", "local_distractor"),
+                ("⏱️ 詞性限時分類", "pos_sorting"),
+            ]
+        else:
+            std_modes = [
+                ("📝 看單字輸入讀音", "reading_input"),
+                ("📝 看中文選單字", "meaning_choice"),
+                ("🔀 內部混淆選擇題", "local_distractor"),
+                ("⏱️ 詞性限時分類", "pos_sorting"),
+            ]
+
+        for text, value in std_modes:
             rb = tk.Radiobutton(
                 std_frame, text=text,
                 variable=self.exam_mode_var, value=value,
@@ -1692,6 +1757,7 @@ class DictionaryHome:
                 highlightthickness=0, bd=0, anchor="w", justify="left"
             )
             rb.pack(fill=tk.X, pady=3)
+            self.exam_mode_rbs[value] = rb
 
         # ── 進階 AI 考題 LabelFrame ────────────────────────────────
         adv_mode_frame = tk.LabelFrame(
@@ -1720,6 +1786,7 @@ class DictionaryHome:
                 highlightthickness=0, bd=0, anchor="w", justify="left"
             )
             rb.pack(fill=tk.X, pady=3)
+            self.exam_mode_rbs[value] = rb
 
         # ── 🎮 遊戲模式 LabelFrame ──────────────────────────────
         game_frame = tk.LabelFrame(
@@ -1730,7 +1797,8 @@ class DictionaryHome:
             padx=10, pady=8,
             relief="groove"
         )
-        game_frame.pack(fill=tk.X, padx=14, pady=(0, 10))
+        if exam_lang != "en":
+            game_frame.pack(fill=tk.X, padx=14, pady=(0, 10))
 
         match_btn = self.create_soft_button(
             game_frame, "🃏 記憶翻牌矩陣",
@@ -2229,25 +2297,38 @@ class DictionaryHome:
             self._show_pos_sorting_question(item)
             return
 
+        exam_lang = self.get_exam_language()
         if mode == "reading_input":
-            self.exam_question_type_label.config(text="題型：看單字輸入讀音")
-            self.exam_prompt_label.config(text=item.get("單字", ""))
-            chinese = str(item.get("中文", "")).strip()
-            hint_text = f"中文提示：{chinese}" if chinese else "中文提示：目前沒有中文，可直接憑記憶作答"
-            hint_text += "\n請輸入羅馬讀音或平假名"
-            self.exam_hint_label.config(text=hint_text)
+            if exam_lang == "en":
+                self.exam_question_type_label.config(text="題型：拼寫練習 (英)")
+                chinese = str(item.get("中文", "")).strip()
+                self.exam_prompt_label.config(text=chinese or "無中文提示")
+                self.exam_hint_label.config(text="請拼寫出對應的英文單字")
+            else:
+                self.exam_question_type_label.config(text="題型：看單字輸入讀音")
+                self.exam_prompt_label.config(text=item.get("單字", ""))
+                chinese = str(item.get("中文", "")).strip()
+                hint_text = f"中文提示：{chinese}" if chinese else "中文提示：目前沒有中文，可直接憑記憶作答"
+                hint_text += "\n請輸入羅馬讀音或平假名"
+                self.exam_hint_label.config(text=hint_text)
+
             for btn in self.exam_choice_buttons:
                 btn.pack_forget()
             self.exam_answer_entry.pack(fill=tk.X, padx=20, pady=(0, 14), ipady=10)
             self.exam_answer_entry.focus_set()
             return
 
-        self.exam_question_type_label.config(text="題型：看中文選單字")
-        self.exam_prompt_label.config(text=str(item.get("中文", "")).strip())
-        reading = str(item.get("讀音", "")).strip()
-        self.exam_hint_label.config(
-            text=f"讀音提示：{self.format_reading_with_romaji(reading)}" if reading else "讀音提示：無"
-        )
+        if exam_lang == "en":
+            self.exam_question_type_label.config(text="題型：看中文選單字 (英)")
+            self.exam_prompt_label.config(text=str(item.get("中文", "")).strip())
+            self.exam_hint_label.config(text="請選出對應的英文單字")
+        else:
+            self.exam_question_type_label.config(text="題型：看中文選單字")
+            self.exam_prompt_label.config(text=str(item.get("中文", "")).strip())
+            reading = str(item.get("讀音", "")).strip()
+            self.exam_hint_label.config(
+                text=f"讀音提示：{self.format_reading_with_romaji(reading)}" if reading else "讀音提示：無"
+            )
         self.exam_answer_entry.pack_forget()
 
         options = self.build_exam_choices(item)
@@ -2324,8 +2405,12 @@ class DictionaryHome:
         correct_answer = ""
         user_answer = ""
 
+        exam_lang = self.get_exam_language()
         if mode == "reading_input":
-            correct_answer = str(self.exam_current_question.get("讀音", "")).strip()
+            if exam_lang == "en":
+                correct_answer = str(self.exam_current_question.get("單字", "")).strip()
+            else:
+                correct_answer = str(self.exam_current_question.get("讀音", "")).strip()
             user_answer = self.exam_answer_entry.get().strip()
         else:
             correct_answer = str(self.exam_current_question.get("單字", "")).strip()
@@ -2336,9 +2421,12 @@ class DictionaryHome:
             return
 
         if mode == "reading_input":
-            normalized_user_answer = self.normalize_exam_reading(user_answer)
-            accepted_answers = self.build_exam_reading_answers(correct_answer)
-            is_correct = normalized_user_answer in accepted_answers
+            if exam_lang == "en":
+                is_correct = user_answer.lower() == correct_answer.lower()
+            else:
+                normalized_user_answer = self.normalize_exam_reading(user_answer)
+                accepted_answers = self.build_exam_reading_answers(correct_answer)
+                is_correct = normalized_user_answer in accepted_answers
         else:
             is_correct = user_answer == correct_answer
 
@@ -2488,7 +2576,9 @@ class DictionaryHome:
 
     def _show_local_distractor_question(self, item):
         """顯示「看單字 → 選中文」的本地干擾選擇題。"""
-        self.exam_question_type_label.config(text="題型：🔀 內部混淆選擇題")
+        exam_lang = self.get_exam_language()
+        title_text = "題型：🔀 英文混淆選擇題" if exam_lang == "en" else "題型：🔀 內部混淆選擇題"
+        self.exam_question_type_label.config(text=title_text)
         word = str(item.get("單字", "")).strip()
         reading = str(item.get("讀音", "")).strip()
         pos = str(item.get("詞性", "")).strip()
@@ -2617,8 +2707,11 @@ class DictionaryHome:
         for btn in self.exam_choice_buttons:
             btn.pack_forget()
 
-        # 基礎詞性（不包含「其他」）
-        cats = ["名詞", "動詞", "い形容詞", "な形容詞", "副詞", "助詞"]
+        exam_lang = self.get_exam_language()
+        if exam_lang == "en":
+            cats = ["Noun", "Verb", "Adjective", "Adverb", "Pronoun", "Preposition"]
+        else:
+            cats = ["名詞", "動詞", "い形容詞", "な形容詞", "副詞", "助詞"]
 
         # 確保正確的選項一定會出現在 cats 中
         for c in correct_cats:
@@ -2787,7 +2880,7 @@ class DictionaryHome:
         def worker():
             try:
                 from ai_service import generate_cloze_question
-                result = generate_cloze_question(word, context_tag)
+                result = generate_cloze_question(word, context_tag, lang=self.get_exam_language())
             except Exception as e:
                 result = {}
                 print(f"[dictionary_home] AI 克漏字生成失敗：{e}")
@@ -2965,7 +3058,7 @@ class DictionaryHome:
         def worker():
             try:
                 from ai_service import generate_translation_question
-                result = generate_translation_question(word)
+                result = generate_translation_question(word, lang=self.get_exam_language())
             except Exception as e:
                 result = {}
                 print(f"[dictionary_home] AI 翻譯題目生成失敗：{e}")
@@ -3012,7 +3105,7 @@ class DictionaryHome:
         def worker():
             try:
                 from ai_service import evaluate_translation
-                res = evaluate_translation(jp_sentence, ref_translation, user_answer)
+                res = evaluate_translation(jp_sentence, ref_translation, user_answer, lang=self.get_exam_language())
             except Exception:
                 res = {"score": 0, "feedback": "評分失敗"}
             self.window.after(0, lambda: self._show_ai_translation_feedback(res, ref_translation))
@@ -3054,7 +3147,7 @@ class DictionaryHome:
         def worker():
             try:
                 from ai_service import generate_paraphrasing_question
-                result = generate_paraphrasing_question(word)
+                result = generate_paraphrasing_question(word, lang=self.get_exam_language())
             except Exception as e:
                 result = {}
                 print(f"[dictionary_home] AI 語意重構題目生成失敗：{e}")
@@ -3111,7 +3204,7 @@ class DictionaryHome:
         def worker():
             try:
                 from ai_service import evaluate_paraphrasing
-                res = evaluate_paraphrasing(simple_sentence, target_word, user_answer)
+                res = evaluate_paraphrasing(simple_sentence, target_word, user_answer, lang=self.get_exam_language())
             except Exception:
                 res = {"is_correct": False, "feedback": "評分失敗"}
             self.window.after(0, lambda: self._show_ai_paraphrase_feedback(res, ref_answer))
@@ -3274,11 +3367,36 @@ class DictionaryHome:
         # 圖2：最常出錯詞性
         ax2 = axes[1]
         ax2.set_facecolor("#EADCC8")
+
+        # 詞性縮寫對照表
+        POS_LABEL_MAP = {
+            "n": "名詞", "v": "動詞", "v1": "一段動詞", "v5": "五段動詞",
+            "vs": "サ變動詞", "vk": "カ變動詞", "vi": "自動詞", "vt": "他動詞",
+            "adj-i": "い形容詞", "adj-na": "な形容詞", "adj-no": "の形容詞", "adj": "形容詞",
+            "adv": "副詞", "prt": "助詞", "conj": "接續詞", "exp": "慣用語",
+            "int": "感嘆詞", "pn": "代名詞", "pref": "前綴", "suf": "後綴",
+            "aux": "助動詞", "aux-v": "助動詞", "ctr": "助數詞",
+            "Noun": "名詞 (EN)", "Verb": "動詞 (EN)",
+            "Adjective": "形容詞 (EN)", "Adverb": "副詞 (EN)",
+            "Pronoun": "代名詞 (EN)", "Preposition": "介系詞 (EN)",
+        }
+
+        def normalize_pos_label(raw_pos: str) -> list:
+            """將原始詞性字串分解並映射為友善名稱，回傳清單。"""
+            if not raw_pos:
+                return ["未知詞性"]
+            parts = [p.strip() for p in raw_pos.replace("、", ",").replace("；", ",").replace(";", ",").split(",") if p.strip()]
+            result = []
+            for part in parts:
+                result.append(POS_LABEL_MAP.get(part, part))
+            return result if result else ["未知詞性"]
+
         pos_errors = {}
         for r in self.exam_history:
             if not r["correct"]:
-                pos = r.get("pos", "未知") or "未知"
-                pos_errors[pos] = pos_errors.get(pos, 0) + 1
+                raw_pos = r.get("pos", "") or ""
+                for label in normalize_pos_label(raw_pos):
+                    pos_errors[label] = pos_errors.get(label, 0) + 1
 
         if pos_errors:
             pos_sorted = sorted(pos_errors.items(), key=lambda x: x[1], reverse=True)[:8]

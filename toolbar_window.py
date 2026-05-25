@@ -104,17 +104,38 @@ class ToolbarWindow:
             img = ImageGrab.grab(bbox=bbox)
             img.save("temp_ocr.png")
 
-            if self.settings.get("gpt_ocr_enabled", False):
+            ocr_mode = self.settings.get("ocr_mode", "gemini")
+
+            if ocr_mode == "gemini":
+                from app_settings import load_google_api_key
+                google_key = load_google_api_key()
+                if google_key:
+                    result = self.ocr_engine.read_gemini_ocr("temp_ocr.png")
+                    source_text = result.get("source_text", "").strip()
+                    translated_text = result.get("translated_text", "").strip()
+                    # 若 Gemini 成功辨識則顯示，否則 fallback 到 EasyOCR
+                    if source_text and not translated_text.startswith("Gemini OCR 失敗"):
+                        self.open_result_popup(source_text, translated_text or None)
+                        return
+                    elif not source_text and translated_text.startswith("Gemini OCR 失敗"):
+                        print(f"[OCR] Gemini OCR 失敗，自動切換 EasyOCR：{translated_text}")
+                        # fallthrough 到 EasyOCR
+                    else:
+                        self.open_result_popup(source_text or "Gemini OCR 沒有辨識到原文", translated_text or None)
+                        return
+                else:
+                    print("[OCR] 未設定 Google API Key，改用 EasyOCR")
+
+            elif ocr_mode == "gpt" and self.settings.get("gpt_ocr_enabled", False):
                 result = self.ocr_engine.read_gpt_ocr("temp_ocr.png")
                 source_text = result.get("source_text", "").strip()
                 translated_text = result.get("translated_text", "").strip()
-
                 if source_text or translated_text:
                     self.open_result_popup(source_text or "GPT OCR 沒有辨識到原文", translated_text)
                 return
 
+            # 預設或 fallback： EasyOCR
             text = self.ocr_engine.read("temp_ocr.png", "easyocr")
-
             if text.strip():
                 self.open_result_popup(text)
         except Exception as e:
@@ -248,6 +269,7 @@ class ToolbarWindow:
             self.settings["translation_mode"] = translation_mode_var.get()
             self.settings["gpt_ocr_enabled"] = bool(gpt_ocr_var.get())
             self.settings["ai_provider"] = ai_provider_var.get()
+            self.settings["ocr_mode"] = ocr_mode_var.get()
             self.settings = save_settings(self.settings)
             save_openai_api_key(api_key_var.get())
             save_google_api_key(google_api_key_var.get())
@@ -287,6 +309,7 @@ class ToolbarWindow:
         translation_mode_var = tk.StringVar(value=self.settings.get("translation_mode", "local"))
         gpt_ocr_var = tk.BooleanVar(value=self.settings.get("gpt_ocr_enabled", False))
         ai_provider_var = tk.StringVar(value=self.settings.get("ai_provider", "openai"))
+        ocr_mode_var = tk.StringVar(value=self.settings.get("ocr_mode", "gemini"))
         api_key_var = tk.StringVar(value=load_openai_api_key())
         google_api_key_var = tk.StringVar(value=load_google_api_key())
 
@@ -335,20 +358,33 @@ class ToolbarWindow:
         _make_radio(translation_frame, "Google 翻譯（免費）", translation_mode_var, "local").pack(anchor="w", pady=4)
         _make_radio(translation_frame, "GPT 翻譯（需要 OPENAI_API_KEY）", translation_mode_var, "gpt").pack(anchor="w", pady=4)
 
-        ocr_frame = _make_lframe(content, "OCR 模式")
+        ocr_frame = _make_lframe(content, "OCR 辨識模式")
         ocr_frame.pack(fill=tk.X, padx=20, pady=(0, 14))
-        tk.Checkbutton(
+        _make_radio(
             ocr_frame,
-            text="同意使用 GPT OCR：截圖會送到 OpenAI 做原文辨識與翻譯",
-            variable=gpt_ocr_var,
-            bg="#F5EAD9",
-            fg="#4A2F21",
-            selectcolor="#FBF6EE",
-            activebackground="#F5EAD9",
-            font=("Microsoft JhengHei", 11),
-            anchor="w",
-            justify="left"
+            "🤖 Gemini OCR（優先推薦，需要 Google API Key）",
+            ocr_mode_var, "gemini"
         ).pack(anchor="w", pady=4)
+        _make_radio(
+            ocr_frame,
+            "📜 EasyOCR（離線，日文準確度較低）",
+            ocr_mode_var, "easyocr"
+        ).pack(anchor="w", pady=4)
+        _make_radio(
+            ocr_frame,
+            "💰 GPT OCR（高精度，需要 OpenAI API Key）",
+            ocr_mode_var, "gpt"
+        ).pack(anchor="w", pady=4)
+        tk.Label(
+            ocr_frame,
+            text="• Gemini OCR 若未設定 Google Key 則自動回倒 EasyOCR\n• GPT OCR 若未啟用或未設定 Key 則自動回倒 EasyOCR",
+            font=("Microsoft JhengHei", 9),
+            bg="#F5EAD9",
+            fg="#6A4A35",
+            anchor="w",
+            justify="left",
+            wraplength=460
+        ).pack(fill=tk.X, pady=(6, 0))
 
         def _make_key_entry(parent, var):
             e = tk.Entry(

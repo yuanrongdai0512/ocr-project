@@ -234,27 +234,29 @@ def enrich_word_with_gpt(word: str) -> dict:
 # 2. AI 情境克漏字生成
 # ═══════════════════════════════════════════════════════════════════════
 
-CLOZE_SYSTEM_PROMPT = """\
-你是日文語言教師，專門出填空題。
-使用者給你一個日文單字和可選的情境標籤。
+def get_cloze_prompt(lang="ja"):
+    lang_name = "英文" if lang == "en" else "日文"
+    romaji_field = '"phonetics": "音標 (如有)"' if lang == "en" else '"romaji": "完整句子的羅馬音（Hepburn 式）"'
+    return f"""\
+你是{lang_name}語言教師，專門出填空題。
+使用者給你一個{lang_name}單字和可選的情境標籤。
 請生成一道「情境填空題」，嚴格回傳以下 JSON，不加任何額外說明：
-{
-  "sentence_display": "將目標單字替換成 ＿＿＿ 的日文句子（顯示用）",
-  "sentence_full": "完整的日文句子（含正確答案）",
+{{
+  "sentence_display": "將目標單字替換成 ＿＿＿ 的{lang_name}句子（顯示用）",
+  "sentence_full": "完整的{lang_name}句子（含正確答案）",
   "answer": "應填入的正確單字",
   "distractors": ["錯誤選項1", "錯誤選項2", "錯誤選項3"],
   "hint_zh": "這個句子的中文大意（讓學習者理解語境）",
   "hint_pos": "目標單字的詞性提示",
-  "romaji": "完整句子的羅馬音（Hepburn 式）",
+  {romaji_field},
   "difficulty": "easy / medium / hard"
-}
+}}
 句子要自然，貼近真實使用場景（日常對話、新聞、動漫、文學等）。
 目標單字必須在句子中出現，且語法正確。
 distractors 必須具有干擾力，例如：發音相近、詞性相同或容易混淆的字。
 """
 
-
-def generate_cloze_question(word: str, context_tag: str = "") -> dict:
+def generate_cloze_question(word: str, context_tag: str = "", lang: str = "ja") -> dict:
     """
     為 word 生成一道情境克漏字題目。
     context_tag 為情境標籤提示（如「動漫台詞」「新聞用語」）。
@@ -266,10 +268,11 @@ def generate_cloze_question(word: str, context_tag: str = "") -> dict:
         return {}
 
     tag_hint = f"（請以「{context_tag}」的語境出題）" if context_tag else ""
+    prompt = get_cloze_prompt(lang)
 
     try:
         result = _call_llm_json(
-            system_prompt=CLOZE_SYSTEM_PROMPT,
+            system_prompt=prompt,
             user_prompt=f"請為以下單字出一道填空題：{word} {tag_hint}"
         )
         return result
@@ -333,49 +336,54 @@ def validate_cloze_answer(sentence_full: str, correct_answer: str, user_answer: 
 # 4. 翻譯微調與評分
 # ═══════════════════════════════════════════════════════════════════════
 
-TRANSLATION_QUESTION_PROMPT = """\
-你是日文語言教師。
-使用者給你一個日文單字，請你用這個單字造一個自然、實用的日文句子，讓使用者練習翻譯成中文。
+def get_translation_prompt(lang="ja"):
+    lang_name = "英文" if lang == "en" else "日文"
+    return f"""\
+你是{lang_name}語言教師。
+使用者給你一個{lang_name}單字，請你用這個單字造一個自然、實用的{lang_name}句子，讓使用者練習翻譯成中文。
 嚴格回傳以下 JSON，不加任何額外說明：
-{
-  "japanese_sentence": "你造的日文句子",
+{{
+  "japanese_sentence": "你造的{lang_name}句子",
   "reference_translation": "這個句子的標準中文翻譯"
-}
+}}
 """
 
-def generate_translation_question(word: str) -> dict:
+def generate_translation_question(word: str, lang: str = "ja") -> dict:
     word = str(word).strip()
     if not word:
         return {}
     try:
         return _call_llm_json(
-            system_prompt=TRANSLATION_QUESTION_PROMPT,
+            system_prompt=get_translation_prompt(lang),
             user_prompt=f"請使用單字「{word}」出題。"
         )
     except Exception as e:
         print(f"[ai_service] generate_translation_question 失敗：{e}")
         return {}
 
-EVALUATE_TRANSLATION_PROMPT = """\
+def get_evaluate_translation_prompt(lang="ja"):
+    lang_name = "英文" if lang == "en" else "日文"
+    return f"""\
 你是嚴格但充滿鼓勵的語言老師。
-使用者翻譯了一句日文為中文，請給予 1-10 分的評分，並提供詳細的老師講評。
+使用者翻譯了一句{lang_name}為中文，請給予 1-10 分的評分，並提供詳細的老師講評。
 嚴格回傳以下 JSON，不加任何額外說明：
-{
+{{
   "score": 8,
   "feedback": "點出翻譯哪裡不夠道地，或者漏掉了原句的細微語氣（約 2-3 句話）"
-}
+}}
 """
 
-def evaluate_translation(japanese_sentence: str, reference_translation: str, user_translation: str) -> dict:
+def evaluate_translation(japanese_sentence: str, reference_translation: str, user_translation: str, lang: str = "ja") -> dict:
     try:
+        lang_name = "英文" if lang == "en" else "日文"
         user_prompt = (
-            f"日文原句：{japanese_sentence}\n"
+            f"{lang_name}原句：{japanese_sentence}\n"
             f"標準翻譯參考：{reference_translation}\n"
             f"使用者的翻譯：{user_translation}\n"
             f"請給分並講評。"
         )
         return _call_llm_json(
-            system_prompt=EVALUATE_TRANSLATION_PROMPT,
+            system_prompt=get_evaluate_translation_prompt(lang),
             user_prompt=user_prompt
         )
     except Exception as e:
@@ -387,44 +395,48 @@ def evaluate_translation(japanese_sentence: str, reference_translation: str, use
 # 5. 換句話說 / 語意重構 (Paraphrasing)
 # ═══════════════════════════════════════════════════════════════════════
 
-PARAPHRASE_QUESTION_PROMPT = """\
-你是日語學習教練，負責訓練大腦的深度思考。
+def get_paraphrase_prompt(lang="ja"):
+    lang_name = "英文" if lang == "en" else "日文"
+    return f"""\
+你是{lang_name}語言學習教練，負責訓練大腦的深度思考。
 使用者會給你一個「進階單字」，請你設計一個情境：
-給定一個「意思相近，但用非常簡單的日文表達的句子」，要求學習者使用該「進階單字」來重構這句話。
+給定一個「意思相近，但用非常簡單的{lang_name}表達的句子」，要求學習者使用該「進階單字」來重構這句話。
 嚴格回傳以下 JSON，不加任何額外說明：
-{
-  "simple_sentence": "用簡單字彙表達的日文句子",
+{{
+  "simple_sentence": "用簡單字彙表達的{lang_name}句子",
   "simple_meaning": "這句話的中文意思",
   "target_word": "要求學習者必須使用的進階單字",
-  "reference_answer": "使用 target_word 改寫後的標準日文句子"
-}
+  "reference_answer": "使用 target_word 改寫後的標準{lang_name}句子"
+}}
 """
 
-def generate_paraphrasing_question(word: str) -> dict:
+def generate_paraphrasing_question(word: str, lang: str = "ja") -> dict:
     word = str(word).strip()
     if not word:
         return {}
     try:
         return _call_llm_json(
-            system_prompt=PARAPHRASE_QUESTION_PROMPT,
+            system_prompt=get_paraphrase_prompt(lang),
             user_prompt=f"請針對進階單字「{word}」設計語意重構題。"
         )
     except Exception as e:
         print(f"[ai_service] generate_paraphrasing_question 失敗：{e}")
         return {}
 
-EVALUATE_PARAPHRASE_PROMPT = """\
-你是專業的日語改寫（Paraphrasing）指導老師。
+def get_evaluate_paraphrase_prompt(lang="ja"):
+    lang_name = "英文" if lang == "en" else "日文"
+    return f"""\
+你是專業的{lang_name}改寫（Paraphrasing）指導老師。
 使用者被要求用指定的單字，改寫原本簡單的句子。
 請檢查使用者的改寫是否語法正確、語意相符，且確實使用了指定單字。
 嚴格回傳以下 JSON，不加任何額外說明：
-{
+{{
   "is_correct": true / false,
   "feedback": "解釋改寫得好不好，指出文法錯誤，或給出更道地的寫法（2-3 句話）"
-}
+}}
 """
 
-def evaluate_paraphrasing(simple_sentence: str, target_word: str, user_sentence: str) -> dict:
+def evaluate_paraphrasing(simple_sentence: str, target_word: str, user_sentence: str, lang: str = "ja") -> dict:
     try:
         user_prompt = (
             f"原意簡單句：{simple_sentence}\n"
@@ -433,7 +445,7 @@ def evaluate_paraphrasing(simple_sentence: str, target_word: str, user_sentence:
             f"請評估是否成功重構並給予回饋。"
         )
         return _call_llm_json(
-            system_prompt=EVALUATE_PARAPHRASE_PROMPT,
+            system_prompt=get_evaluate_paraphrase_prompt(lang),
             user_prompt=user_prompt
         )
     except Exception as e:
