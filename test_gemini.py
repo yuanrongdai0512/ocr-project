@@ -3,7 +3,7 @@ from google import genai
 from google.genai import types
 
 def test_gemini():
-    api_key = "AIzaSyDWIR4d3HxlL-ADdgjYhDJHckz41udT4pQ"
+    api_key = "YOUR_API_KEY_HERE"  # 已經移除寫死的 Key
     client = genai.Client(api_key=api_key)
     
     # We will use gemini-2.5-flash as it is fast and supports JSON response mime type natively
