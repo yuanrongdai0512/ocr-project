@@ -489,14 +489,12 @@ class DictionaryHome:
             return
 
         try:
+            from dictionary_manager import add_word_fast, enrich_word_data_async, enrich_word_with_gpt_async
             result = add_word_fast(selected_text)
-            if result.startswith("已加入字典"):
-                messagebox.showinfo(
-                    "字典",
-                    f"{result}\n背景正在補充讀音 / 中文 / 英文 / 詞性",
-                    parent=self.window
-                )
-                self.window.after(500, lambda word=selected_text: enrich_word_data_async(word))
+            if result.startswith("已加入字典") or result == "已存在":
+                if messagebox.askyesno("AI 自動補全", f"{result}\n\n是否要使用 AI 自動補充此單字的詳細資料？ (包含讀音、詞性、例句、補充等)", parent=self.window):
+                    self.window.after(300, lambda word=selected_text: enrich_word_data_async(word))
+                    self.window.after(1500, lambda word=selected_text: enrich_word_with_gpt_async(word))
             else:
                 messagebox.showinfo("字典", result, parent=self.window)
         except Exception as e:
@@ -1056,16 +1054,21 @@ class DictionaryHome:
         left_content = tk.Frame(left_page, bg="#FBF6EE")
         left_content.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 14))
 
-        original_section = tk.Frame(left_content, bg="#FBF6EE", bd=0, height=90)
-        original_section.pack(fill=tk.X, pady=(0, 10))
+        self.collection_left_pane = tk.PanedWindow(left_content, orient=tk.VERTICAL, bg="#D2B89A", sashwidth=4, bd=0)
+        self.collection_left_pane.pack(fill=tk.BOTH, expand=True)
+
+        original_section = tk.Frame(self.collection_left_pane, bg="#FBF6EE", bd=0)
         original_section.pack_propagate(False)
+        self.collection_left_pane.add(original_section, minsize=60)
 
-        note_section = tk.Frame(left_content, bg="#FBF6EE", bd=0, height=180)
-        note_section.pack(fill=tk.X, pady=(0, 10))
+        note_section = tk.Frame(self.collection_left_pane, bg="#FBF6EE", bd=0)
         note_section.pack_propagate(False)
+        self.collection_left_pane.add(note_section, minsize=100)
 
-        image_section = tk.Frame(left_content, bg="#FBF6EE", bd=0)
-        image_section.pack(fill=tk.BOTH, expand=True)
+        image_section = tk.Frame(self.collection_left_pane, bg="#FBF6EE", bd=0)
+        self.collection_left_pane.add(image_section, minsize=100)
+
+        self.collection_left_pane.bind("<ButtonRelease-1>", self.on_collection_pane_resize)
 
         original_label = tk.Label(
             original_section,

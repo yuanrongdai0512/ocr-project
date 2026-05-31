@@ -668,6 +668,15 @@ def enrich_word_with_gpt_and_save(word):
     if not item.get("中文", "") and gpt_data.get("中文", ""):
         item["中文"] = gpt_data["中文"]
 
+    if not item.get("英文", "") and gpt_data.get("英文", ""):
+        item["英文"] = gpt_data["英文"]
+
+    if not item.get("用法", "") and gpt_data.get("用法", ""):
+        item["用法"] = gpt_data["用法"]
+
+    if not item.get("補充", "") and gpt_data.get("補充", ""):
+        item["補充"] = gpt_data["補充"]
+
     # 例句：GPT 回傳格式為 [{"ja":..., "romaji":..., "zh":...}]
     # 轉換成字典現有的例句格式（字串 list）
     existing_examples = item.get("例句", [])

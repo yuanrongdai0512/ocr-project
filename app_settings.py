@@ -34,7 +34,7 @@ def load_settings():
     settings = dict(DEFAULT_SETTINGS)
     settings.update(data)
 
-    if settings.get("translation_mode") not in {"local", "gpt"}:
+    if settings.get("translation_mode") not in {"local", "gpt", "gemini"}:
         settings["translation_mode"] = DEFAULT_SETTINGS["translation_mode"]
 
     if settings.get("ai_provider") not in {"openai", "google"}:

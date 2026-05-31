@@ -357,6 +357,7 @@ class ToolbarWindow:
         translation_frame.pack(fill=tk.X, padx=20, pady=(0, 14))
         _make_radio(translation_frame, "Google 翻譯（免費）", translation_mode_var, "local").pack(anchor="w", pady=4)
         _make_radio(translation_frame, "GPT 翻譯（需要 OPENAI_API_KEY）", translation_mode_var, "gpt").pack(anchor="w", pady=4)
+        _make_radio(translation_frame, "✨ Gemini 翻譯（需要 Google API Key）", translation_mode_var, "gemini").pack(anchor="w", pady=4)
 
         ocr_frame = _make_lframe(content, "OCR 辨識模式")
         ocr_frame.pack(fill=tk.X, padx=20, pady=(0, 14))

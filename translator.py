@@ -1,7 +1,7 @@
 from deep_translator import GoogleTranslator
 from openai import OpenAI
 
-from app_settings import load_openai_api_key, load_settings
+from app_settings import load_openai_api_key, load_google_api_key, load_settings
 
 
 def get_openai_client():
@@ -55,11 +55,44 @@ def translate_gpt(text):
         return f"GPT翻譯失敗：{e}"
 
 
+def translate_gemini(text):
+    text = text.strip()
+
+    if not text:
+        return "沒有可翻譯的文字"
+
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        return "Gemini翻譯失敗：請安裝 google-genai 套件"
+
+    api_key = load_google_api_key()
+    if not api_key:
+        return "Gemini翻譯失敗：尚未設定 Google API Key"
+
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"請將以下文字翻譯成自然流暢的繁體中文。只輸出翻譯結果，不要加任何說明：\n\n{text}",
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=2000
+            )
+        )
+        return (response.text or "").strip()
+    except Exception as e:
+        return f"Gemini翻譯失敗：{e}"
+
+
 def translate(text, mode):
     if mode == "local":
         return translate_local(text)
     if mode == "gpt":
         return translate_gpt(text)
+    if mode == "gemini":
+        return translate_gemini(text)
     return "未知翻譯模式"
 
 

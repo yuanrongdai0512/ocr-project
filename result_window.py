@@ -4,7 +4,7 @@ import pyperclip
 from PIL import ImageGrab
 
 from translator import translate
-from dictionary_manager import add_word
+from dictionary_manager import add_word, enrich_word_data_async, enrich_word_with_gpt_async
 from select_area import ScreenSelector
 from ocr_engine import OCREngine
 
@@ -446,7 +446,14 @@ class ResultWindow:
 
         try:
             result = add_word(selected_text)
-            messagebox.showinfo("字典", result)
+            
+            if result.startswith("已加入字典") or result == "已存在":
+                if messagebox.askyesno("AI 自動補全", f"{result}\n\n是否要使用 AI 自動補充此單字的詳細資料？ (包含讀音、詞性、例句、補充等)"):
+                    self.root.after(300, lambda w=selected_text: enrich_word_data_async(w))
+                    self.root.after(1500, lambda w=selected_text: enrich_word_with_gpt_async(w))
+            else:
+                messagebox.showinfo("字典", result)
+                
             self.set_status(f"字典：{result}")
         except Exception as e:
             messagebox.showerror("錯誤", f"加入字典失敗：{e}")
@@ -566,8 +573,14 @@ class ResultWindow:
 
                 if result and result.startswith("已加入字典"):
                     self.set_status("已複製原文選取內容，已加入字典")
+                    if messagebox.askyesno("AI 自動補全", f"{result}\n\n是否要使用 AI 自動補充此單字的詳細資料？"):
+                        self.root.after(300, lambda w=selected_text: enrich_word_data_async(w))
+                        self.root.after(1500, lambda w=selected_text: enrich_word_with_gpt_async(w))
                 elif result == "已存在":
                     self.set_status("已複製原文選取內容，字典中已存在")
+                    if messagebox.askyesno("AI 自動補全", f"{result}\n\n是否要使用 AI 自動補充此單字的詳細資料？"):
+                        self.root.after(300, lambda w=selected_text: enrich_word_data_async(w))
+                        self.root.after(1500, lambda w=selected_text: enrich_word_with_gpt_async(w))
                 elif result == "這段內容看起來像句子，請先反白單字再加入":
                     self.set_status("已複製原文選取內容（句子未加入字典）")
                 else:

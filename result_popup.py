@@ -308,14 +308,13 @@ class ResultPopup:
                         print(f"更新標籤失敗：{e}")
 
                 tag_text = "、".join(selected_tags) if selected_tags else "未分類"
-                messagebox.showinfo(
-                    "字典",
-                    f"⭐ {result}\n標籤：{tag_text}\n背景正在補充 AI 資料…",
-                    parent=self.window
-                )
-                self.set_status(f"已收藏：{word}")
-                self.window.after(300, lambda w=word: enrich_word_data_async(w))
-                self.window.after(1500, lambda w=word: enrich_word_with_gpt_async(w))
+                
+                if messagebox.askyesno("AI 自動補全", f"⭐ {result}\n標籤：{tag_text}\n\n是否要使用 AI 自動補充此單字的詳細資料？ (包含讀音、詞性、例句、補充等)", parent=self.window):
+                    self.set_status(f"已收藏：{word} (AI 補全中)")
+                    self.window.after(300, lambda w=word: enrich_word_data_async(w))
+                    self.window.after(1500, lambda w=word: enrich_word_with_gpt_async(w))
+                else:
+                    self.set_status(f"已收藏：{word}")
             else:
                 messagebox.showinfo("字典", result, parent=self.window)
                 self.set_status(f"字典：{result}")
